@@ -17,6 +17,9 @@ public class AppRunner {
 
     private static boolean isExit = false;
 
+    private int money = 250;
+    private int coint = 100;
+
     private AppRunner() {
         products.addAll(new Product[]{
                 new Water(ActionLetter.B, 20),
@@ -41,13 +44,16 @@ public class AppRunner {
         print("В автомате доступны:");
         showProducts(products);
         choosePayment();
-        print("Монет на сумму: " + strategy.getAcceptor().getAmount());
+        System.out.println(money);
+        System.out.println(coint);
+        System.out.println(strategy.getName());
+        print("У вас есть " + strategy.getAcceptor().getAmount() + " рублей " + strategy.getAcceptor().getName());
 
         UniversalArray<Product> allowProducts = new UniversalArrayImpl<>();
         allowProducts.addAll(getAllowedProducts().toArray());
 
         chooseAction(allowProducts);
-
+        syncingMoney(strategy.getAcceptor().getAmount());
     }
 
     private UniversalArray<Product> getAllowedProducts() {
@@ -64,11 +70,13 @@ public class AppRunner {
         int num = inputPayment();
         switch (num) {
             case 1:
-                strategy.setStrategy(new MoneyAcceptor(250));
+                strategy.setStrategy(new MoneyAcceptor(money));
+                strategy.setName("money");
                 break;
             case 2:
             default:
-                strategy.setStrategy(new CoinAcceptor(100));
+                strategy.setStrategy(new CoinAcceptor(coint));
+                strategy.setName("coint");
                 break;
         }
     }
@@ -76,7 +84,7 @@ public class AppRunner {
     private int inputPayment() {
         while (true) {
             try{
-                System.out.println("Выберите способ оплаты:\n" +
+                print("Выберите способ оплаты:\n" +
                         "\t1 - купюрами\n" +
                         "\t2 - монетами\n");
                 int num = Integer.parseInt(fromConsole().strip());
@@ -85,9 +93,9 @@ public class AppRunner {
                 }
                 return num;
             } catch (NumberFormatException nfe) {
-                System.out.println("Введите число указывающий на способ оплаты.");
+                print("Введите число указывающий на способ оплаты.");
             } catch (IndetifacalNumber iu) {
-                System.out.println(iu.getMessage());
+                print(iu.getMessage());
             }
         }
     }
@@ -98,7 +106,7 @@ public class AppRunner {
         print(" h - Выйти");
         String action = fromConsole().substring(0, 1);
         if (action.equalsIgnoreCase("a")) {
-            strategy.getAcceptor().add(strategy.getAcceptor().getAmount() + 10);
+            strategy.getAcceptor().add(10);
             System.out.println("Вы пополнили баланс на 10");
             return;
         } else if (action.equalsIgnoreCase("h")) {
@@ -120,7 +128,23 @@ public class AppRunner {
             print("Недопустимая буква. Попрбуйте еще раз.");
             chooseAction(products);
         }
+    }
 
+    private void syncingMoney(int sum) {
+        try {
+            switch (strategy.getName()) {
+                case "money":
+                    money = sum;
+                    break;
+                case "coint":
+                    coint = sum;
+                    break;
+                default:
+                    throw new Exception();
+            }
+        } catch (Exception e) {
+            System.out.println("Случилась ошибка с выбором способа оплаты");
+        }
 
     }
 

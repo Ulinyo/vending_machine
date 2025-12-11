@@ -2,6 +2,7 @@ package acceptorStrategy;
 
 public class MoneyAcceptor implements AcceptorStrategy{
     private int amount;
+    private String name  = "Купюрами";
 
     public MoneyAcceptor(int amount) {
         this.amount = amount;
@@ -20,5 +21,10 @@ public class MoneyAcceptor implements AcceptorStrategy{
     @Override
     public void add(int num) {
         this.amount += num;
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 }
