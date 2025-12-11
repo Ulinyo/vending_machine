@@ -1,4 +1,8 @@
+import acceptorStrategy.AcceptorStrategy;
+import acceptorStrategy.MoneyAcceptor;
+import acceptorStrategy.PaymentAcceptor;
 import enums.ActionLetter;
+import exceptions.IndetifacalNumber;
 import model.*;
 import util.UniversalArray;
 import util.UniversalArrayImpl;
@@ -9,9 +13,12 @@ public class AppRunner {
 
     private final UniversalArray<Product> products = new UniversalArrayImpl<>();
 
-    private final CoinAcceptor coinAcceptor;
+    private final PaymentAcceptor strategy = new PaymentAcceptor();
 
     private static boolean isExit = false;
+
+    private int money = 250;
+    private int coint = 100;
 
     private AppRunner() {
         products.addAll(new Product[]{
@@ -22,7 +29,6 @@ public class AppRunner {
                 new Mars(ActionLetter.F, 80),
                 new Pistachios(ActionLetter.G, 130)
         });
-        coinAcceptor = new CoinAcceptor(100);
     }
 
     public static void run() {
@@ -32,55 +38,110 @@ public class AppRunner {
         }
     }
 
+
+
     private void startSimulation() {
         print("В автомате доступны:");
         showProducts(products);
-
-        print("Монет на сумму: " + coinAcceptor.getAmount());
+        choosePayment();
+        print("У вас есть " + strategy.getAcceptor().getAmount() + " рублей " + strategy.getAcceptor().getName());
 
         UniversalArray<Product> allowProducts = new UniversalArrayImpl<>();
         allowProducts.addAll(getAllowedProducts().toArray());
-        chooseAction(allowProducts);
 
+        chooseAction(allowProducts);
+        syncingMoney(strategy.getAcceptor().getAmount());
     }
 
     private UniversalArray<Product> getAllowedProducts() {
         UniversalArray<Product> allowProducts = new UniversalArrayImpl<>();
         for (int i = 0; i < products.size(); i++) {
-            if (coinAcceptor.getAmount() >= products.get(i).getPrice()) {
+            if (strategy.getAcceptor().getAmount() >= products.get(i).getPrice()) {
                 allowProducts.add(products.get(i));
             }
         }
         return allowProducts;
     }
 
+    private void choosePayment() {
+        int num = inputPayment();
+        switch (num) {
+            case 1:
+                strategy.setStrategy(new MoneyAcceptor(money));
+                strategy.setName("money");
+                break;
+            case 2:
+            default:
+                strategy.setStrategy(new CoinAcceptor(coint));
+                strategy.setName("coint");
+                break;
+        }
+    }
+
+    private int inputPayment() {
+        while (true) {
+            try{
+                print("Выберите способ оплаты:\n" +
+                        "\t1 - купюрами\n" +
+                        "\t2 - монетами");
+                int num = Integer.parseInt(fromConsole().strip());
+                if (num < 1 || num > 2) {
+                    throw new IndetifacalNumber("Такого способа оплаты нет. Попробуйте еще раз: ");
+                }
+                return num;
+            } catch (NumberFormatException nfe) {
+                print("Введите число указывающий на способ оплаты.");
+            } catch (IndetifacalNumber iu) {
+                print(iu.getMessage());
+            }
+        }
+    }
+
     private void chooseAction(UniversalArray<Product> products) {
-        print(" a - Пополнить баланс");
+        print(" a - пополнить");
         showActions(products);
         print(" h - Выйти");
         String action = fromConsole().substring(0, 1);
-        if ("a".equalsIgnoreCase(action)) {
-            coinAcceptor.setAmount(coinAcceptor.getAmount() + 10);
-            print("Вы пополнили баланс на 10");
+        if (action.equalsIgnoreCase("a")) {
+            strategy.getAcceptor().add(10);
+            System.out.println("Вы пополнили баланс на 10");
+            return;
+        } else if (action.equalsIgnoreCase("h")) {
+            isExit = true;
             return;
         }
         try {
             for (int i = 0; i < products.size(); i++) {
                 if (products.get(i).getActionLetter().equals(ActionLetter.valueOf(action.toUpperCase()))) {
-                    coinAcceptor.setAmount(coinAcceptor.getAmount() - products.get(i).getPrice());
+                    strategy.getAcceptor().pay(products.get(i).getPrice());
                     print("Вы купили " + products.get(i).getName());
+                    break;
+                } else if ("h".equalsIgnoreCase(action)) {
+                    isExit = true;
                     break;
                 }
             }
         } catch (IllegalArgumentException e) {
-            if ("h".equalsIgnoreCase(action)) {
-                isExit = true;
-            } else {
-                print("Недопустимая буква. Попрбуйте еще раз.");
-                chooseAction(products);
-            }
+            print("Недопустимая буква. Попрбуйте еще раз.");
+            chooseAction(products);
         }
+    }
 
+    private void syncingMoney(int sum) {
+        try {
+            switch (strategy.getName()) {
+                case "money":
+                    money = sum;
+                    break;
+                case "coint":
+                    coint = sum;
+                    break;
+                default:
+                    throw new Exception();
+            }
+        } catch (Exception e) {
+            System.out.println("Случилась ошибка с выбором способа оплаты");
+        }
 
     }
 
